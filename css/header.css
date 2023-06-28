@@ -43,7 +43,7 @@ header {
 .menu-bar__icons {
     padding-top: 5px;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
 }
 
@@ -52,4 +52,16 @@ header {
     margin-right: 10px;
 }
 
+.menu-bar__icons img:nth-child(3){
+    width:25px;
+}
 
+.menu-bar__icons div{
+    width: 5px;
+    height: 5px;
+    background-color: red;
+    border-radius: 20px;
+    position: relative;
+    right: 15px;
+    top:-10px
+}
