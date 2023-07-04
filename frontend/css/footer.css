@@ -1,0 +1,46 @@
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100vw;
+    padding-bottom: 20px;
+    border-top: 1px solid wheat;
+    padding-top: 15px;
+    background-color: white;
+}
+
+.footer-block {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+.footer-icons {
+    font-size: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 10px 0 10px;
+    cursor: pointer;
+    text-decoration: none;
+
+}
+
+@keyframes icons-둥-둥 {
+    0%{
+        transform: translateY(0px);
+    }
+    50%{
+        transform: translateY(-10px);
+    }
+    100%{
+        transform: translateY(0px);
+
+    }
+}
+
+.footer-icons__img {
+    width: 30px;
+    
+}
+.footer-icons:hover .footer-icons__img{
+    animation: 2s icons-둥-둥;
+}
