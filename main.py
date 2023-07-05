@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, Response
+from fastapi import FastAPI, UploadFile, Form, Response, Depends
 from pydantic import BaseModel
 from fastapi.staticfiles import (
     StaticFiles,
@@ -6,8 +6,10 @@ from fastapi.staticfiles import (
 from typing import Annotated
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from fastapi_login import LoginManager
+from fastapi_login.exceptions import InvalidCredentialsException
 import sqlite3
-
+import hashlib
 
 con = sqlite3.connect("dbex.db", check_same_thread=False)
 cur = con.cursor()
@@ -36,6 +38,62 @@ msgs = []
 
 app = FastAPI()
 
+SECRET = "super-coding"
+manager = LoginManager(SECRET, "/login")
+
+
+@manager.user_loader()
+def query_user(data):
+    WHERE_STATEMENTS = f'id="{data}"'
+    if type(data) == dict:
+        WHERE_STATEMENTS = f'''id="{data['id']}"'''
+
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    user = cur.execute(
+        f"""
+                       SELECT * FROM user WHERE {WHERE_STATEMENTS}
+                       """
+    ).fetchone()
+    return user
+
+
+@app.post("/login")
+def login(id: Annotated[str, Form()], password: Annotated[str, Form()]):
+    user = query_user(id)
+    print(user)
+    if not user:
+        raise InvalidCredentialsException
+    elif password != user["password"]:
+        raise InvalidCredentialsException
+
+    # 액세스 토큰 만들기
+    access_token = manager.create_access_token(
+        data={"sub": {"name": user["name"], "email": user["email"], "id": user["id"]}}
+    )
+    # 프론트엔드에서 받을 수 있게 액세스토큰 리턴해주기
+    return {"access_token": access_token}
+
+
+@app.post("/signup")
+def signup(
+    id: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    name: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+):
+    # 비밀번호 해쉬화
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    cur.execute(
+        f"""
+                INSERT INTO user(id,name,email,password)
+                VALUES ('{id}','{name}','{email}','{hashed_password}')
+                """
+    )
+    con.commit()
+    print(hashed_password)
+    return "200"
+
 
 @app.post("/msg")
 def create_msg(msg: Msg):
@@ -55,6 +113,7 @@ async def create_item(
     description: Annotated[str, Form()],
     place: Annotated[str, Form()],
     insertAt: Annotated[int, Form()],
+    user=Depends(manager),
 ):
     image_bytes = await image.read()
     cur.execute(
@@ -69,7 +128,7 @@ async def create_item(
 
 
 @app.get("/items")
-async def get_items():
+async def get_items(user=Depends(manager)):
     # 컬럼명도 같이 가져오게 함
     con.row_factory = sqlite3.Row
     cur = con.cursor()
@@ -91,23 +150,6 @@ async def get_image(item_id):
     ).fetchone()[0]
 
     return Response(content=bytes.fromhex(image_bytes))
-
-
-@app.post("/signup")
-def signup(
-    id: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    name: Annotated[str, Form()],
-    email: Annotated[str, Form()],
-):
-    cur.execute(
-        f"""
-                INSERT INTO user(id,name,email,password)
-                VALUES ('{id}','{name}','{email}','{password}')
-                """
-    )
-    con.commit()
-    return "200"
 
 
 # 항상 app.mount 위에 작성해줘야함
