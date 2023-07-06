@@ -1,6 +1,34 @@
 <script>
+  import { onMount } from "svelte";
+  import Footer from "../components/Footer.svelte";
+  import { getDatabase, ref, onValue } from "firebase/database";
+
   let hour = new Date().getHours();
   let min = new Date().getMinutes();
+  //반응형 변수 값이 바뀌면 자동으로 화면 렌더링 시킴
+  $: items = [];
+
+  const calcTime = (timestamp) => {
+    const curTime = new Date().getTime() - 9 * 60 * 60 * 1000;
+    const time = new Date(curTime - timestamp);
+    const hour = time.getHours();
+    const minute = time.getMinutes();
+    const second = time.getSeconds();
+
+    if (hour > 0) return `${hour}시간 전`;
+    else if (minute > 0) return `${minute}분 전`;
+    else if (second > 0) return `${second}초 전`;
+  };
+
+  //다른데 갔다와도 화면 업데이트 시켜주기
+  onMount(() => {
+    const db = getDatabase();
+    const starCountRef = ref(db, "items/");
+    onValue(starCountRef, (snapshot) => {
+      const data = snapshot.val();
+      items = Object.values(data).reverse();
+    });
+  });
 </script>
 
 <div class="media-info-msg">화면 사이즈를 줄여주세요.</div>
@@ -30,41 +58,24 @@
 <main>
   <a class="write-btn" href="#/write">+글쓰기</a>
 </main>
-
-<footer>
-  <div class="footer-block">
-    <div class="footer-icons">
-      <div class="footer-icons__img">
-        <img src="assets/home.svg" alt="" />
-      </div>
-      <div>홈</div>
+{#each items as item}
+  <div class="item-list">
+    <div class="item-list__img">
+      <img src={item.imgUrl} alt={item.price} />
     </div>
-    <div class="footer-icons">
-      <div class="footer-icons__img">
-        <img src="assets/life.svg" alt="" />
+    <div class="item-list__info">
+      <div class="item-list__info-title">{item.title}</div>
+      <div class="item-list__info-price">{item.price}</div>
+      <div class="item-list__info-meta">
+        {item.place}
+        {calcTime(item.insertAt)}
       </div>
-      <div>동네생활</div>
-    </div>
-    <div class="footer-icons">
-      <div class="footer-icons__img">
-        <img src="assets/location.svg" alt="" />
-      </div>
-      <div>내 근처</div>
-    </div>
-    <a class="footer-icons" href="#/chat">
-      <div class="footer-icons__img">
-        <img src="assets/chat.svg" alt="" />
-      </div>
-      <div>채팅</div>
-    </a>
-    <div class="footer-icons">
-      <div class="footer-icons__img">
-        <img src="assets/user.svg" alt="" />
-      </div>
-      <div>나의 당근</div>
+      <div>{item.description}</div>
     </div>
   </div>
-</footer>
+{/each}
+
+<Footer location="home" />
 
 <style>
   .info-bar__time {

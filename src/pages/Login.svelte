@@ -17,3 +17,4 @@
   </div>
   <div id="info" />
 </form>
+<Footer />

@@ -1,3 +1,7 @@
+<script>
+  import Footer from "../components/Footer.svelte";
+</script>
+
 <footer>
   <form action="" id="msg-form">
     <input
@@ -10,3 +14,4 @@
   </form>
   <ul id="msg-ul" />
 </footer>
+<Footer />
