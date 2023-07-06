@@ -61,7 +61,6 @@ def query_user(data):
 @app.post("/login")
 def login(id: Annotated[str, Form()], password: Annotated[str, Form()]):
     user = query_user(id)
-    print(user)
     if not user:
         raise InvalidCredentialsException
     elif password != user["password"]:
@@ -71,8 +70,11 @@ def login(id: Annotated[str, Form()], password: Annotated[str, Form()]):
     access_token = manager.create_access_token(
         data={"sub": {"name": user["name"], "email": user["email"], "id": user["id"]}}
     )
-    # 프론트엔드에서 받을 수 있게 액세스토큰 리턴해주기
-    return {"access_token": access_token}
+    # 액세스 토큰을 쿠키에 저장
+    response = JSONResponse({"access_token": access_token})
+    response.set_cookie(key="access_token", value=access_token)
+
+    return response
 
 
 @app.post("/signup")
